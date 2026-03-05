@@ -1,6 +1,9 @@
 layout (location = 0) in vec2 a_pos;
 layout (location = 1) in vec4 a_normal_ed;
 out vec4 v_color;
+out highp vec2 v_wall_uv;
+out highp float v_height_m;
+out lowp float v_is_side;
 
 layout (std140) uniform FillExtrusionDrawableUBO {
     highp mat4 u_matrix;
@@ -51,13 +54,21 @@ void main() {
     #pragma mapbox: initialize highp vec4 color
 
     vec3 normal = a_normal_ed.xyz;
+    float edgedistance = a_normal_ed.w;
 
     base = max(0.0, base);
     height = max(0.0, height);
 
     float t = mod(normal.x, 2.0);
+    float elevation = t > 0.0 ? height : base;
 
-    gl_Position = u_matrix * vec4(a_pos, t > 0.0 ? height : base, 1);
+    gl_Position = u_matrix * vec4(a_pos, elevation, 1);
+
+    // --- Procedural window data ---
+    v_is_side = (normal.y != 0.0) ? 1.0 : 0.0;
+    v_height_m = max(0.0, height - base);
+    float height_range = max(height - base, 0.001);
+    v_wall_uv = vec2(edgedistance, (elevation - base) / height_range);
 
     // Relative luminance (how dark/bright is the surface color?)
     float colorvalue = color.r * 0.2126 + color.g * 0.7152 + color.b * 0.0722;
