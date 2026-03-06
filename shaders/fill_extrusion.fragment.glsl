@@ -5,14 +5,6 @@ in lowp float v_is_side;
 
 void main() {
     fragColor = v_color;
-
-    // --- Spatial color striping for zebra-stripe effect ---
-    {
-        float sid = floor(v_wall_uv.x / 40.0);
-        float sh = fract(sin(sid * 127.1) * 43758.5453);
-        fragColor.rgb *= 0.88 + sh * 0.24;
-    }
-
     // --- Procedural windows on side faces ---
     if (v_is_side > 0.5 && v_height_m >= 3.0) {
         float num_floors = max(1.0, floor(v_height_m / 3.0));
