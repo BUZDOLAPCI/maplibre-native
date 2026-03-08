@@ -157,7 +157,7 @@ void main() {
                          * smoothstep(band_t + fw_v, band_t - fw_v, floor_v);
         // LOD: at low vertical resolution, merge floor bands into continuous fill
         float fw_floor = fwidth(v_wall_uv.y * num_floors);
-        float floor_detail = 1.0 - smoothstep(0.15, 0.45, fw_floor);
+        float floor_detail = 1.0 - smoothstep(0.05, 0.15, fw_floor);
         float band_mask = mix(1.0, floor_mask, floor_detail);
 
         // Vertical window columns (edge-anchored for face-aligned windows)
@@ -169,7 +169,7 @@ void main() {
         float win_l = 0.20;
         float win_r = 0.80;
         // LOD: at low horizontal resolution, merge columns into continuous bands
-        float detail = 1.0 - smoothstep(0.04, 0.12, fw_u);
+        float detail = 1.0 - smoothstep(0.013, 0.04, fw_u);
         float col_mask = mix(1.0,
             smoothstep(win_l - fw_u, win_l + fw_u, cell_u)
             * smoothstep(win_r + fw_u, win_r - fw_u, cell_u),
