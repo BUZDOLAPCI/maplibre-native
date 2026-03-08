@@ -2,6 +2,7 @@ in vec4 v_color;
 in highp vec2 v_wall_uv;
 in highp float v_height_m;
 in lowp float v_is_side;
+flat in highp float v_ed_flat;
 
 void main() {
     fragColor = v_color;
@@ -10,9 +11,9 @@ void main() {
         float num_floors = max(1.0, floor(v_height_m / 3.5));
         float floor_v = fract(v_wall_uv.y * num_floors);
 
-        // Floor band margins (92% window fill — thin slab edges)
-        float band_b = 0.04;
-        float band_t = 0.96;
+        // Floor band margins (77% window fill — visible floor slabs)
+        float band_b = 0.08;
+        float band_t = 0.85;
         float fw_v = fwidth(floor_v);
         float floor_mask = smoothstep(band_b - fw_v, band_b + fw_v, floor_v)
                          * smoothstep(band_t + fw_v, band_t - fw_v, floor_v);
@@ -21,14 +22,14 @@ void main() {
         float floor_detail = 1.0 - smoothstep(0.15, 0.45, fw_floor);
         float band_mask = mix(1.0, floor_mask, floor_detail);
 
-        // Vertical window columns
+        // Vertical window columns (edge-anchored for face-aligned windows)
         float window_spacing = 54.0;
-        float raw_u = v_wall_uv.x / window_spacing;
+        float raw_u = (v_wall_uv.x - v_ed_flat) / window_spacing;
         float cell_u = fract(raw_u);
         float fw_u = fwidth(raw_u);
 
-        float win_l = 0.08;
-        float win_r = 0.92;
+        float win_l = 0.10;
+        float win_r = 0.90;
         // LOD: at low horizontal resolution, merge columns into continuous bands
         float detail = 1.0 - smoothstep(0.04, 0.12, fw_u);
         float col_mask = mix(1.0,
@@ -37,6 +38,11 @@ void main() {
             detail);
 
         float win_mask = band_mask * col_mask;
+
+        // Face-edge padding: fade windows near building corners
+        float dist_from_prov = abs(v_ed_flat - v_wall_uv.x);
+        float edge_fade = smoothstep(0.0, 6.5, dist_from_prov);
+        win_mask *= edge_fade;
 
         if (win_mask > 0.01) {
             vec2 grid_id = floor(vec2(raw_u, v_wall_uv.y * num_floors));
@@ -57,8 +63,8 @@ void main() {
             }
 
             float luminance = dot(v_color.rgb, vec3(0.299, 0.587, 0.114));
-            vec3 lit_window = window_color * max(luminance * 1.2, 0.65);
-            fragColor.rgb = mix(fragColor.rgb, lit_window, 0.94 * win_mask);
+            vec3 lit_window = window_color * max(luminance * 1.2, 0.60);
+            fragColor.rgb = mix(fragColor.rgb, lit_window, 0.92 * win_mask);
         }
     }
 
