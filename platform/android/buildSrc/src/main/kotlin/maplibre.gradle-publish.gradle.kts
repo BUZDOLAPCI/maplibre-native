@@ -14,7 +14,7 @@ plugins {
 afterEvaluate {
     mavenPublishing {
         publishToMavenCentral(true)
-        signAllPublications()
+        // signAllPublications() // disabled for local builds without GPG
     }
 }
 

@@ -64,6 +64,8 @@ layout (std140) uniform FillExtrusionPropsUBO {
     highp float u_from_scale;
     highp float u_to_scale;
     lowp float props_pad2;
+    lowp vec3 u_camera_dir;
+    lowp float props_pad3;
 };
 
 #ifndef HAS_UNIFORM_u_base
@@ -178,6 +180,8 @@ layout (std140) uniform FillExtrusionPropsUBO {
     highp float u_from_scale;
     highp float u_to_scale;
     lowp float props_pad2;
+    lowp vec3 u_camera_dir;
+    lowp float props_pad3;
 };
 
 uniform sampler2D u_image;

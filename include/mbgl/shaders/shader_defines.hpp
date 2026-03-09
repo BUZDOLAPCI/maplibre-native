@@ -402,11 +402,12 @@ enum {
 enum {
     idFillExtrusionPosVertexAttribute,
     idFillExtrusionNormalEdVertexAttribute,
+    idFillExtrusionFaceWidthVertexAttribute,
 
-    // Data driven
+    // Data driven — order MUST match #pragma mapbox: define order in GLSL
     idFillExtrusionBaseVertexAttribute,
-    idFillExtrusionColorVertexAttribute,
     idFillExtrusionHeightVertexAttribute,
+    idFillExtrusionColorVertexAttribute,
     idFillExtrusionPatternFromVertexAttribute,
     idFillExtrusionPatternToVertexAttribute,
 

@@ -14,6 +14,8 @@
 #include <mbgl/shaders/shader_program_base.hpp>
 #include <mbgl/style/layers/fill_extrusion_layer_properties.hpp>
 
+#include <cmath>
+
 #if MLN_RENDER_BACKEND_METAL
 #include <mbgl/shaders/mtl/fill_extrusion.hpp>
 #endif
@@ -39,6 +41,14 @@ void FillExtrusionLayerTweaker::execute(LayerGroupBase& layerGroup, const PaintP
     const auto debugGroup = parameters.encoder->createDebugGroup(label.c_str());
 #endif
 
+    // Camera direction for Fresnel specular on windows
+    const double pitch = state.getPitch();     // radians
+    const double bearing = state.getBearing(); // radians
+    const float cam_z = static_cast<float>(std::cos(-pitch));
+    const float cam_h = static_cast<float>(std::sin(pitch));
+    const float cam_x = cam_h * static_cast<float>(std::sin(bearing));
+    const float cam_y = -cam_h * static_cast<float>(std::cos(bearing));
+
     // UBO depends on more than just evaluated properties, so we need to update every time,
     // but the resulting buffer can be shared across all the drawables from the layer.
     const FillExtrusionPropsUBO propsUBO = {
@@ -54,7 +64,9 @@ void FillExtrusionLayerTweaker::execute(LayerGroupBase& layerGroup, const PaintP
         .fade = crossfade.t,
         .from_scale = crossfade.fromScale,
         .to_scale = crossfade.toScale,
-        .pad2 = 0};
+        .pad2 = 0,
+        .camera_dir = {{cam_x, cam_y, cam_z}},
+        .pad3 = 0};
     auto& layerUniforms = layerGroup.mutableUniformBuffers();
     layerUniforms.createOrUpdate(idFillExtrusionPropsUBO, &propsUBO, context);
 

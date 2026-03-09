@@ -102,7 +102,7 @@ void FillExtrusionBucket::addFeature(const GeometryTileFeature& feature,
                 const auto& p1 = ring[i];
 
                 vertices.emplace_back(
-                    FillExtrusionBucket::layoutVertex(p1, 0, 0, 1, 1, static_cast<uint16_t>(edgeDistance)));
+                    FillExtrusionBucket::layoutVertex(p1, 0, 0, 1, 1, static_cast<uint16_t>(edgeDistance), 0));
                 flatIndices.emplace_back(triangleIndex);
                 triangleIndex++;
 
@@ -118,17 +118,19 @@ void FillExtrusionBucket::addFeature(const GeometryTileFeature& feature,
                         edgeDistance = 0;
                     }
 
+                    const auto faceWidth = static_cast<uint16_t>(dist);
+
                     vertices.emplace_back(FillExtrusionBucket::layoutVertex(
-                        p1, perp.x, perp.y, 0, 0, static_cast<uint16_t>(edgeDistance)));
+                        p1, perp.x, perp.y, 0, 0, static_cast<uint16_t>(edgeDistance), faceWidth));
                     vertices.emplace_back(FillExtrusionBucket::layoutVertex(
-                        p1, perp.x, perp.y, 0, 1, static_cast<uint16_t>(edgeDistance)));
+                        p1, perp.x, perp.y, 0, 1, static_cast<uint16_t>(edgeDistance), faceWidth));
 
                     edgeDistance += dist;
 
                     vertices.emplace_back(FillExtrusionBucket::layoutVertex(
-                        p2, perp.x, perp.y, 0, 0, static_cast<uint16_t>(edgeDistance)));
+                        p2, perp.x, perp.y, 0, 0, static_cast<uint16_t>(edgeDistance), faceWidth));
                     vertices.emplace_back(FillExtrusionBucket::layoutVertex(
-                        p2, perp.x, perp.y, 0, 1, static_cast<uint16_t>(edgeDistance)));
+                        p2, perp.x, perp.y, 0, 1, static_cast<uint16_t>(edgeDistance), faceWidth));
 
                     // ┌──────┐
                     // │ 0  1 │ Counter-Clockwise winding order.

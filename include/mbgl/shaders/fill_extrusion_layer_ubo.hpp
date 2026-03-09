@@ -50,9 +50,11 @@ struct alignas(16) FillExtrusionPropsUBO {
     /* 68 */ float from_scale;
     /* 72 */ float to_scale;
     /* 76 */ float pad2;
-    /* 80 */
+    /* 80 */ std::array<float, 3> camera_dir;
+    /* 92 */ float pad3;
+    /* 96 */
 };
-static_assert(sizeof(FillExtrusionPropsUBO) == 5 * 16);
+static_assert(sizeof(FillExtrusionPropsUBO) == 6 * 16);
 
 } // namespace shaders
 } // namespace mbgl

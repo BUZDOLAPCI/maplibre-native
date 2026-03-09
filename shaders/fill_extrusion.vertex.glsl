@@ -1,10 +1,13 @@
 layout (location = 0) in vec2 a_pos;
 layout (location = 1) in vec4 a_normal_ed;
+layout (location = 2) in float a_face_width;
 out vec4 v_color;
 out highp vec2 v_wall_uv;
 out highp float v_height_m;
 out lowp float v_is_side;
 flat out highp float v_ed_flat;
+flat out highp float v_face_width;
+flat out mediump vec3 v_wall_normal;
 
 layout (std140) uniform FillExtrusionDrawableUBO {
     highp mat4 u_matrix;
@@ -43,6 +46,8 @@ layout (std140) uniform FillExtrusionPropsUBO {
     highp float u_from_scale;
     highp float u_to_scale;
     lowp float props_pad2;
+    lowp vec3 u_camera_dir;
+    lowp float props_pad3;
 };
 
 #pragma mapbox: define highp float base
@@ -71,6 +76,8 @@ void main() {
     float height_range = max(height - base, 0.001);
     v_wall_uv = vec2(edgedistance, (elevation - base) / height_range);
     v_ed_flat = edgedistance;
+    v_face_width = a_face_width;
+    v_wall_normal = normal.y != 0.0 ? normalize(vec3(normal.x, normal.y, 0.0)) : vec3(0.0);
 
     // Relative luminance (how dark/bright is the surface color?)
     float colorvalue = color.r * 0.2126 + color.g * 0.7152 + color.b * 0.0722;
@@ -92,16 +99,12 @@ void main() {
 
     // Add gradient along z axis of side surfaces
     if (normal.y != 0.0) {
-        // This avoids another branching statement, but multiplies by a constant of 0.84 if no vertical gradient,
-        // and otherwise calculates the gradient based on base + height
         directional *= (
             (1.0 - u_vertical_gradient) +
             (u_vertical_gradient * clamp((t + base) * pow(height / 150.0, 0.5), mix(0.7, 0.98, 1.0 - u_lightintensity), 1.0)));
     }
 
     // Assign final color based on surface + ambient light color, diffuse light directional, and light color
-    // with lower bounds adjusted to hue of light
-    // so that shading is tinted with the complementary (opposite) color to the light color
     v_color.r += clamp(color.r * directional * u_lightcolor.r, mix(0.0, 0.3, 1.0 - u_lightcolor.r), 1.0);
     v_color.g += clamp(color.g * directional * u_lightcolor.g, mix(0.0, 0.3, 1.0 - u_lightcolor.g), 1.0);
     v_color.b += clamp(color.b * directional * u_lightcolor.b, mix(0.0, 0.3, 1.0 - u_lightcolor.b), 1.0);
