@@ -27,6 +27,15 @@ layout (std140) uniform FillExtrusionPropsUBO {
 void main() {
     fragColor = v_color;
 
+    // --- Per-building body color variation (shader-based, cross-platform) ---
+    // Hash using v_ed_flat + v_height_m to get per-building variation.
+    // These varyings differ per building, producing a warm beige palette.
+    float body_hash = fract(sin(v_ed_flat * 0.0073 + v_height_m * 0.0197) * 43758.5453);
+    vec3 beige_warm = vec3(0.961, 0.929, 0.886); // #F5EDE2
+    vec3 beige_cool = vec3(0.910, 0.867, 0.816); // #E8DDD0
+    fragColor.rgb = mix(beige_warm, beige_cool, body_hash);
+    fragColor.a = v_color.a;
+
     // --- Procedural windows on side faces ---
     if (v_is_side > 0.5 && v_height_m >= 3.1) {
         float num_floors = max(1.0, floor(v_height_m / 3.0));
@@ -39,27 +48,33 @@ void main() {
         float floor_mask = smoothstep(band_b - fw_v, band_b + fw_v, floor_v)
                          * smoothstep(band_t + fw_v, band_t - fw_v, floor_v);
 
-        // Vertical window columns — absolute edgedistance-based
-        // (bypasses a_face_width attribute which reads as 0 on native)
-        // Native scale: web values / 4.6
-        float window_width = 78.3;
-        float window_gap = 1.7;
+        // Vertical window columns — face-width-relative positioning
+        // (identical constants to web shader, coordinate scales are 1:1)
+        float window_width = 360.0;
+        float window_gap = 8.0;
         float window_spacing = window_width + window_gap;
-        float edge_pad = 13.0;
+        float outer_pad_l = 60.0;
+        float outer_pad_r = 60.0;
 
-        // Use absolute edgedistance for repeating column pattern
-        float raw_u = v_wall_uv.x / window_spacing;
-        float cell_u = fract(raw_u);
-        float fw_u = fwidth(cell_u);
-        float win_r = window_width / window_spacing;
-        float col_mask = smoothstep(0.0 - fw_u, 0.0 + fw_u, cell_u)
-                       * smoothstep(win_r + fw_u, win_r - fw_u, cell_u);
+        float col_mask = 0.0;
+        float raw_u = 0.0;
+        float cell_u = 0.0;
+        float face_u = clamp(v_wall_uv.x - v_ed_flat, 0.0, max(v_face_width, 0.0));
 
-        // Soft edge fade at face boundaries using derivative-based detection
-        float fw_ed = fwidth(v_wall_uv.x);
-        float face_local = v_wall_uv.x - v_ed_flat;
-        // Fade near face start (where face_local approaches 0)
-        col_mask *= smoothstep(0.0, edge_pad * 1.5, abs(face_local));
+        if (v_face_width > outer_pad_l + outer_pad_r) {
+            float content_max = v_face_width - outer_pad_r;
+            float fw_face = fwidth(face_u);
+            float within_content = smoothstep(outer_pad_l - fw_face, outer_pad_l + fw_face, face_u)
+                                 * smoothstep(content_max + fw_face, content_max - fw_face, face_u);
+
+            raw_u = (face_u - outer_pad_l) / window_spacing;
+            cell_u = fract(raw_u);
+            float fw_u = fwidth(cell_u);
+            float win_r = window_width / window_spacing;
+            col_mask = within_content
+                     * smoothstep(0.0 - fw_u, 0.0 + fw_u, cell_u)
+                     * smoothstep(win_r + fw_u, win_r - fw_u, cell_u);
+        }
 
         float win_mask = floor_mask * col_mask;
 
