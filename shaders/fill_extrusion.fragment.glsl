@@ -85,7 +85,7 @@ void main() {
 
         if (win_mask > 0.01) {
             vec2 grid_id = floor(vec2(raw_u, v_wall_uv.y * num_floors));
-            float face_seed = v_ed_flat * 0.0073 + v_height_m * 0.0197;
+            float face_seed = v_ed_flat * 0.0073 + v_face_width * 0.0129 + v_height_m * 0.0197;
             float hash = fract(sin(dot(grid_id, vec2(12.9898, 78.233)) + face_seed) * 43758.5453);
             float hash2 = fract(sin(dot(grid_id + 19.37, vec2(39.3468, 11.1351)) + face_seed) * 24634.6345);
 

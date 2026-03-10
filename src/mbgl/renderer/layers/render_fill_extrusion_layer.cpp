@@ -210,9 +210,11 @@ void RenderFillExtrusionLayer::update(gfx::ShaderRegistry& shaders,
         propertiesAsUniforms.second.clear();
 
         auto vertexAttrs = context.createVertexAttributeArray();
+        // Order MUST match GLSL #pragma mapbox: define order AND shader_defines.hpp enum:
+        // base (loc 3), height (loc 4), color (loc 5), pattern (loc 6-7)
         vertexAttrs->readDataDrivenPaintProperties<FillExtrusionBase,
-                                                   FillExtrusionColor,
                                                    FillExtrusionHeight,
+                                                   FillExtrusionColor,
                                                    FillExtrusionPattern>(
             binders, evaluated, propertiesAsUniforms, idFillExtrusionBaseVertexAttribute);
 

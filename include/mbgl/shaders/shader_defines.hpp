@@ -404,7 +404,8 @@ enum {
     idFillExtrusionNormalEdVertexAttribute,
     idFillExtrusionFaceWidthVertexAttribute,
 
-    // Data driven — order MUST match #pragma mapbox: define order in GLSL
+    // Data driven — order MUST match GLSL #pragma mapbox: define order
+    // AND readDataDrivenPaintProperties template order
     idFillExtrusionBaseVertexAttribute,
     idFillExtrusionHeightVertexAttribute,
     idFillExtrusionColorVertexAttribute,

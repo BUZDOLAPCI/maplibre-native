@@ -229,6 +229,7 @@ const std::vector<UniformBlockInfo> FillExtrusionShaderInfo::uniformBlocks = {
 const std::vector<AttributeInfo> FillExtrusionShaderInfo::attributes = {
     AttributeInfo{"a_pos", idFillExtrusionPosVertexAttribute},
     AttributeInfo{"a_normal_ed", idFillExtrusionNormalEdVertexAttribute},
+    AttributeInfo{"a_face_width", idFillExtrusionFaceWidthVertexAttribute},
     AttributeInfo{"a_base", idFillExtrusionBaseVertexAttribute},
     AttributeInfo{"a_height", idFillExtrusionHeightVertexAttribute},
     AttributeInfo{"a_color", idFillExtrusionColorVertexAttribute},
