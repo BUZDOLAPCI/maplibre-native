@@ -135,10 +135,10 @@ void FillExtrusionBucket::addFeature(const GeometryTileFeature& feature,
                     // ┌──────┐
                     // │ 0  1 │ Counter-Clockwise winding order.
                     // │      │ Triangle 1: 0 => 2 => 1
-                    // │ 2  3 │ Triangle 2: 1 => 2 => 3
+                    // │ 2  3 │ Triangle 2: 2 => 3 => 1
                     // └──────┘
                     triangles.emplace_back(triangleIndex, triangleIndex + 2, triangleIndex + 1);
-                    triangles.emplace_back(triangleIndex + 1, triangleIndex + 2, triangleIndex + 3);
+                    triangles.emplace_back(triangleIndex + 2, triangleIndex + 3, triangleIndex + 1);
                     triangleIndex += 4;
                     triangleSegment.vertexLength += 4;
                     triangleSegment.indexLength += 6;
