@@ -18,6 +18,7 @@ out lowp float v_is_side;
 flat out highp float v_ed_flat;
 flat out highp float v_face_width;
 flat out mediump vec3 v_wall_normal;
+flat out highp float v_body_hash;
 
 layout (std140) uniform FillExtrusionDrawableUBO {
     highp mat4 u_matrix;
@@ -106,6 +107,7 @@ highp vec4 color = u_color;
     v_ed_flat = edgedistance;
     v_face_width = a_face_width;
     v_wall_normal = normal.y != 0.0 ? normalize(vec3(normal.x, normal.y, 0.0)) : vec3(0.0);
+    v_body_hash = fract(sin(base * 0.0073 + height * 0.0197) * 43758.5453);
 
     // Relative luminance (how dark/bright is the surface color?)
     float colorvalue = color.r * 0.2126 + color.g * 0.7152 + color.b * 0.0722;
@@ -146,6 +148,7 @@ in lowp float v_is_side;
 flat in highp float v_ed_flat;
 flat in highp float v_face_width;
 flat in mediump vec3 v_wall_normal;
+flat in highp float v_body_hash;
 
 layout (std140) uniform FillExtrusionPropsUBO {
     highp vec4 u_color;
@@ -168,10 +171,8 @@ layout (std140) uniform FillExtrusionPropsUBO {
 void main() {
     fragColor = v_color;
 
-    // --- Per-building body color variation (shader-based, cross-platform) ---
-    // Hash using v_ed_flat + v_height_m to get per-building variation.
-    // These varyings differ per building, producing a warm beige palette.
-    float body_hash = fract(sin(v_ed_flat * 0.0073 + v_height_m * 0.0197) * 43758.5453);
+    // --- Per-building body color variation (computed in vertex shader from base+height) ---
+    float body_hash = v_body_hash;
     vec3 beige_warm = vec3(0.961, 0.929, 0.886); // #F5EDE2
     vec3 beige_cool = vec3(0.910, 0.867, 0.816); // #E8DDD0
     fragColor.rgb = mix(beige_warm, beige_cool, body_hash);

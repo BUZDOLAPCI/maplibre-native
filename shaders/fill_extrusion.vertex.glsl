@@ -8,6 +8,7 @@ out lowp float v_is_side;
 flat out highp float v_ed_flat;
 flat out highp float v_face_width;
 flat out mediump vec3 v_wall_normal;
+flat out highp float v_body_hash;
 
 layout (std140) uniform FillExtrusionDrawableUBO {
     highp mat4 u_matrix;
@@ -78,6 +79,7 @@ void main() {
     v_ed_flat = edgedistance;
     v_face_width = a_face_width;
     v_wall_normal = normal.y != 0.0 ? normalize(vec3(normal.x, normal.y, 0.0)) : vec3(0.0);
+    v_body_hash = fract(sin(base * 0.0073 + height * 0.0197) * 43758.5453);
 
     // Relative luminance (how dark/bright is the surface color?)
     float colorvalue = color.r * 0.2126 + color.g * 0.7152 + color.b * 0.0722;
