@@ -15,7 +15,7 @@ class BucketParameters;
 class RenderFillExtrusionLayer;
 
 using FillExtrusionBinders = PaintPropertyBinders<style::FillExtrusionPaintProperties::DataDrivenProperties>;
-using FillExtrusionLayoutVertex = gfx::Vertex<TypeList<attributes::pos, attributes::normal_ed, attributes::face_width>>;
+using FillExtrusionLayoutVertex = gfx::Vertex<TypeList<attributes::pos, attributes::normal_ed, attributes::face_width, attributes::centroid>>;
 
 class FillExtrusionBucket final : public Bucket {
 public:
@@ -44,7 +44,7 @@ public:
     void update(const FeatureStates&, const GeometryTileLayer&, const std::string&, const ImagePositions&) override;
 
     static FillExtrusionLayoutVertex layoutVertex(
-        Point<int16_t> p, double nx, double ny, double nz, unsigned short t, uint16_t e, uint16_t fw = 0) {
+        Point<int16_t> p, double nx, double ny, double nz, unsigned short t, uint16_t e, uint16_t fw = 0, int16_t cx = 0, int16_t cy = 0) {
         const auto factor = pow(2, 13);
 
         return FillExtrusionLayoutVertex{{{p.x, p.y}},
@@ -56,7 +56,8 @@ public:
                                            static_cast<int16_t>(nz * factor * 2),
                                            // The edgedistance attribute is used for wrapping fill_extrusion patterns
                                            static_cast<int16_t>(e)}},
-                                         {{static_cast<int16_t>(fw)}}};
+                                         {{static_cast<int16_t>(fw)}},
+                                         {{cx, cy}}};
     }
 
     static std::array<float, 3> lightColor(const EvaluatedLight&);

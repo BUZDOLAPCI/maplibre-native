@@ -20,10 +20,13 @@ struct alignas(16) FillExtrusionDrawableUBO {
     /*  96 */ float color_t;
     /* 100 */ float pattern_from_t;
     /* 104 */ float pattern_to_t;
-    /* 108 */ float pad1;
-    /* 112 */
+    /* 108 */ float centroid_scale;
+    /* 112 */ std::array<float, 2> tile_id;
+    /* 120 */ float pad1;
+    /* 124 */ float pad2;
+    /* 128 */
 };
-static_assert(sizeof(FillExtrusionDrawableUBO) == 7 * 16);
+static_assert(sizeof(FillExtrusionDrawableUBO) == 8 * 16);
 
 struct alignas(16) FillExtrusionTilePropsUBO {
     /*  0 */ std::array<float, 4> pattern_from;

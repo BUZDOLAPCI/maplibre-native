@@ -1,7 +1,7 @@
 in vec4 v_color;
 in highp vec2 v_wall_uv;
-in highp float v_height_m;
-in lowp float v_is_side;
+flat in highp float v_height_m;
+flat in lowp float v_is_side;
 flat in highp float v_ed_flat;
 flat in highp float v_face_width;
 flat in mediump vec3 v_wall_normal;
@@ -30,9 +30,18 @@ void main() {
 
     // --- Per-building body color variation (computed in vertex shader from base+height) ---
     float body_hash = v_body_hash;
-    vec3 beige_warm = vec3(0.961, 0.929, 0.886); // #F5EDE2
-    vec3 beige_cool = vec3(0.910, 0.867, 0.816); // #E8DDD0
-    fragColor.rgb = mix(beige_warm, beige_cool, body_hash);
+    // 8-color palette indexed by body_hash [0,1)
+    vec3 pal[8];
+    pal[0] = vec3(0.965, 0.933, 0.875); // #F6EEDF
+    pal[1] = vec3(0.957, 0.941, 0.918); // #F4F0EA
+    pal[2] = vec3(0.976, 0.957, 0.918); // #F9F4EA
+    pal[3] = vec3(0.961, 0.929, 0.886); // #F5EDE2
+    pal[4] = vec3(0.937, 0.902, 0.867); // #EFE6DD
+    pal[5] = vec3(0.961, 0.957, 0.941); // #F5F4F0
+    pal[6] = vec3(0.910, 0.867, 0.816); // #E8DDD0
+    pal[7] = vec3(0.957, 0.922, 0.886); // #F4EBE2
+    vec3 body_color = pal[clamp(int(floor(body_hash * 8.0)), 0, 7)];
+    fragColor.rgb = body_color;
     fragColor.a = v_color.a;
 
     // --- Procedural windows on side faces ---
@@ -43,7 +52,7 @@ void main() {
         // Floor band margins (60% window fill — visible floor slabs)
         float band_b = 0.18;
         float band_t = 0.78;
-        float fw_v = fwidth(floor_v);
+        float fw_v = fwidth(v_wall_uv.y * num_floors);
         float floor_mask = smoothstep(band_b - fw_v, band_b + fw_v, floor_v)
                          * smoothstep(band_t + fw_v, band_t - fw_v, floor_v);
 
@@ -68,7 +77,7 @@ void main() {
 
             raw_u = (face_u - outer_pad_l) / window_spacing;
             cell_u = fract(raw_u);
-            float fw_u = fwidth(cell_u);
+            float fw_u = fwidth(raw_u);
             float win_r = window_width / window_spacing;
             col_mask = within_content
                      * smoothstep(0.0 - fw_u, 0.0 + fw_u, cell_u)
@@ -76,6 +85,12 @@ void main() {
         }
 
         float win_mask = floor_mask * col_mask;
+
+        // Grazing-angle detail gate: fade out windows when face is nearly
+        // edge-on (UV frequency exceeds Nyquist → aliasing).
+        float detail = 1.0 - smoothstep(0.4, 0.8, fwidth(raw_u));
+        float floor_detail = 1.0 - smoothstep(0.4, 0.8, fw_v);
+        win_mask *= min(detail, floor_detail);
 
         // Top-of-building parapet — same thickness as inter-floor slab
         float slab_uv = (1.0 - band_t + band_b) / num_floors;

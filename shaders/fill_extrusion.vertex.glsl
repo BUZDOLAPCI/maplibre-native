@@ -1,10 +1,11 @@
 layout (location = 0) in vec2 a_pos;
 layout (location = 1) in vec4 a_normal_ed;
 layout (location = 2) in float a_face_width;
+layout (location = 3) in vec2 a_centroid;
 out vec4 v_color;
 out highp vec2 v_wall_uv;
-out highp float v_height_m;
-out lowp float v_is_side;
+flat out highp float v_height_m;
+flat out lowp float v_is_side;
 flat out highp float v_ed_flat;
 flat out highp float v_face_width;
 flat out mediump vec3 v_wall_normal;
@@ -22,7 +23,10 @@ layout (std140) uniform FillExtrusionDrawableUBO {
     highp float u_color_t;
     highp float u_pattern_from_t;
     highp float u_pattern_to_t;
+    highp float u_centroid_scale;
+    highp vec2 u_tile_id;
     lowp float drawable_pad1;
+    lowp float drawable_pad2;
 };
 
 layout (std140) uniform FillExtrusionTilePropsUBO {
@@ -79,7 +83,14 @@ void main() {
     v_ed_flat = edgedistance;
     v_face_width = a_face_width;
     v_wall_normal = normal.y != 0.0 ? normalize(vec3(normal.x, normal.y, 0.0)) : vec3(0.0);
-    v_body_hash = fract(sin(base * 0.0073 + height * 0.0197) * 43758.5453);
+    vec2 world_centroid = u_tile_id + (a_centroid / 8192.0) * u_centroid_scale;
+    // Hash world_centroid directly — no grid snapping needed.
+    // world_centroid is bit-exact across zoom levels (all ops are power-of-2
+    // divisions), so the chaotic sin() hash produces stable colors per building.
+    // Two-round hash with large-magnitude constants for decorrelation.
+    float h = fract(sin(dot(world_centroid, vec2(127.1, 311.7))) * 43758.5453);
+    h = fract(sin(h * 78.233 + dot(world_centroid, vec2(269.5, 183.3))) * 24634.6345);
+    v_body_hash = fract(h + height * 0.0197);
 
     // Relative luminance (how dark/bright is the surface color?)
     float colorvalue = color.r * 0.2126 + color.g * 0.7152 + color.b * 0.0722;

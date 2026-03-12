@@ -111,6 +111,7 @@ void FillExtrusionLayerTweaker::execute(LayerGroupBase& layerGroup, const PaintP
         const auto pixelY = static_cast<int32_t>(tileSizeAtNearestZoom * tileID.canonical.y);
         const auto numTiles = std::pow(2, tileID.canonical.z);
         const auto heightFactor = static_cast<float>(-numTiles / util::tileSize_D / 8.0);
+        const double zoomFactor = std::pow(2.0, tileID.canonical.z - 8);
 
         Size textureSize = {0, 0};
         if (const auto& tex = drawable.getTexture(idFillExtrusionImageTexture)) {
@@ -140,7 +141,10 @@ void FillExtrusionLayerTweaker::execute(LayerGroupBase& layerGroup, const PaintP
             .color_t = std::get<0>(binders->get<FillExtrusionColor>()->interpolationFactor(zoom)),
             .pattern_from_t = std::get<0>(binders->get<FillExtrusionPattern>()->interpolationFactor(zoom)),
             .pattern_to_t = std::get<0>(binders->get<FillExtrusionPattern>()->interpolationFactor(zoom)),
-            .pad1 = 0
+            .centroid_scale = static_cast<float>(1.0 / zoomFactor),
+            .tile_id = {{static_cast<float>(tileID.canonical.x / zoomFactor), static_cast<float>(tileID.canonical.y / zoomFactor)}},
+            .pad1 = 0,
+            .pad2 = 0
         };
 
 #if MLN_UBO_CONSOLIDATION

@@ -63,6 +63,21 @@ void FillExtrusionBucket::addFeature(const GeometryTileFeature& feature,
                                      std::size_t index,
                                      const CanonicalTileID& canonical) {
     for (auto& polygon : classifyRings(geometry)) {
+        // Compute polygon centroid for per-building color hash
+        int64_t cx_sum = 0, cy_sum = 0;
+        int centroid_count = 0;
+        for (const auto& ring : polygon) {
+            for (std::size_t ci = 0; ci < ring.size(); ci++) {
+                if (ci == ring.size() - 1 && ring[0].x == ring[ci].x && ring[0].y == ring[ci].y)
+                    continue;
+                cx_sum += ring[ci].x;
+                cy_sum += ring[ci].y;
+                centroid_count++;
+            }
+        }
+        const int16_t centroid_x = centroid_count > 0 ? static_cast<int16_t>(cx_sum / centroid_count) : 0;
+        const int16_t centroid_y = centroid_count > 0 ? static_cast<int16_t>(cy_sum / centroid_count) : 0;
+
         // Optimize polygons with many interior rings for earcut tesselation.
         limitHoles(polygon, 500);
 
@@ -102,7 +117,7 @@ void FillExtrusionBucket::addFeature(const GeometryTileFeature& feature,
                 const auto& p1 = ring[i];
 
                 vertices.emplace_back(
-                    FillExtrusionBucket::layoutVertex(p1, 0, 0, 1, 1, static_cast<uint16_t>(edgeDistance), 0));
+                    FillExtrusionBucket::layoutVertex(p1, 0, 0, 1, 1, static_cast<uint16_t>(edgeDistance), 0, centroid_x, centroid_y));
                 flatIndices.emplace_back(triangleIndex);
                 triangleIndex++;
 
@@ -121,16 +136,16 @@ void FillExtrusionBucket::addFeature(const GeometryTileFeature& feature,
                     const auto faceWidth = static_cast<uint16_t>(dist);
 
                     vertices.emplace_back(FillExtrusionBucket::layoutVertex(
-                        p1, perp.x, perp.y, 0, 0, static_cast<uint16_t>(edgeDistance), faceWidth));
+                        p1, perp.x, perp.y, 0, 0, static_cast<uint16_t>(edgeDistance), faceWidth, centroid_x, centroid_y));
                     vertices.emplace_back(FillExtrusionBucket::layoutVertex(
-                        p1, perp.x, perp.y, 0, 1, static_cast<uint16_t>(edgeDistance), faceWidth));
+                        p1, perp.x, perp.y, 0, 1, static_cast<uint16_t>(edgeDistance), faceWidth, centroid_x, centroid_y));
 
                     edgeDistance += dist;
 
                     vertices.emplace_back(FillExtrusionBucket::layoutVertex(
-                        p2, perp.x, perp.y, 0, 0, static_cast<uint16_t>(edgeDistance), faceWidth));
+                        p2, perp.x, perp.y, 0, 0, static_cast<uint16_t>(edgeDistance), faceWidth, centroid_x, centroid_y));
                     vertices.emplace_back(FillExtrusionBucket::layoutVertex(
-                        p2, perp.x, perp.y, 0, 1, static_cast<uint16_t>(edgeDistance), faceWidth));
+                        p2, perp.x, perp.y, 0, 1, static_cast<uint16_t>(edgeDistance), faceWidth, centroid_x, centroid_y));
 
                     // ┌──────┐
                     // │ 0  1 │ Counter-Clockwise winding order.
