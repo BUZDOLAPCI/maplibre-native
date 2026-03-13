@@ -28,7 +28,7 @@ layout (std140) uniform FillExtrusionPropsUBO {
 void main() {
     fragColor = v_color;
 
-    // --- Per-building body color variation (computed in vertex shader from base+height) ---
+    // --- Per-building body color variation (computed in vertex shader from centroid+height) ---
     float body_hash = v_body_hash;
     // 8-color palette indexed by body_hash [0,1)
     vec3 pal[8];
@@ -88,8 +88,11 @@ void main() {
 
         // Grazing-angle detail gate: fade out windows when face is nearly
         // edge-on (UV frequency exceeds Nyquist → aliasing).
-        float detail = 1.0 - smoothstep(0.4, 0.8, fwidth(raw_u));
-        float floor_detail = 1.0 - smoothstep(0.4, 0.8, fw_v);
+        // Native thresholds are ~3x smaller than web (0.4/0.8) because
+        // high-DPI mobile screens (~440 DPI vs ~96 DPI) produce ~3x
+        // smaller fwidth() values at the same zoom level.
+        float detail = 1.0 - smoothstep(0.13, 0.27, fwidth(raw_u));
+        float floor_detail = 1.0 - smoothstep(0.13, 0.27, fw_v);
         win_mask *= min(detail, floor_detail);
 
         // Top-of-building parapet — same thickness as inter-floor slab

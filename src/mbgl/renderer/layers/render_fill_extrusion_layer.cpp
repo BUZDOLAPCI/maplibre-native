@@ -298,6 +298,13 @@ void RenderFillExtrusionLayer::update(gfx::ShaderRegistry& shaders,
                                    sizeof(FillExtrusionLayoutVertex),
                                    gfx::AttributeDataType::Short);
         }
+        if (const auto& attr = vertexAttrs->set(idFillExtrusionCentroidVertexAttribute)) {
+            attr->setSharedRawData(bucket.sharedVertices,
+                                   offsetof(FillExtrusionLayoutVertex, a4),
+                                   /*vertexOffset=*/0,
+                                   sizeof(FillExtrusionLayoutVertex),
+                                   gfx::AttributeDataType::Short2);
+        }
 
         if (doDepthPass) {
             depthBuilder->setRawVertices({}, vertexCount, gfx::AttributeDataType::Short2);
