@@ -106,15 +106,6 @@ highp vec4 color = u_color;
     // --- Shadow pass: project geometry onto ground plane ---
     v_shadow_opacity = u_is_shadow;
     if (u_is_shadow > 0.001) {
-        // Skip side faces — only roof projects shadow
-        if (normal.y != 0.0) {
-            gl_Position = vec4(0.0, 0.0, 2.0, 1.0);
-            v_color = vec4(0.0); v_wall_uv = vec2(0.0); v_height_m = 0.0;
-            v_is_side = 0.0; v_ed_flat = 0.0; v_face_width = 0.0;
-            v_wall_normal = vec3(0.0); v_body_hash = 0.0; v_directional = 0.0;
-            v_shadow_opacity = 0.0;
-            return;
-        }
         vec2 light_xy = u_lightpos.xy;
         float light_xy_len = length(light_xy);
         float light_z = max(u_lightpos.z, 0.05);
@@ -230,7 +221,12 @@ layout (std140) uniform FillExtrusionPropsUBO {
 void main() {
     // --- Shadow pass early return ---
     if (v_shadow_opacity > 0.001) {
-        fragColor = vec4(0.0, 0.0, 0.0, v_shadow_opacity);
+        float alpha = v_shadow_opacity;
+        // Soft fade at the outer tip of side-face shadow strips
+        if (v_is_side > 0.5) {
+            alpha *= smoothstep(1.0, 0.92, v_wall_uv.y);
+        }
+        fragColor = vec4(0.0, 0.0, 0.0, alpha);
         return;
     }
 

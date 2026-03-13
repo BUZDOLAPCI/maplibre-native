@@ -30,7 +30,12 @@ layout (std140) uniform FillExtrusionPropsUBO {
 void main() {
     // --- Shadow pass early return ---
     if (v_shadow_opacity > 0.001) {
-        fragColor = vec4(0.0, 0.0, 0.0, v_shadow_opacity);
+        float alpha = v_shadow_opacity;
+        // Soft fade at the outer tip of side-face shadow strips
+        if (v_is_side > 0.5) {
+            alpha *= smoothstep(1.0, 0.92, v_wall_uv.y);
+        }
+        fragColor = vec4(0.0, 0.0, 0.0, alpha);
         return;
     }
 
