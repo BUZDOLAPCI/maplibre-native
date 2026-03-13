@@ -6,6 +6,7 @@ flat in highp float v_ed_flat;
 flat in highp float v_face_width;
 flat in mediump vec3 v_wall_normal;
 flat in highp float v_body_hash;
+in float v_directional;
 
 layout (std140) uniform FillExtrusionPropsUBO {
     highp vec4 u_color;
@@ -41,7 +42,7 @@ void main() {
     pal[6] = vec3(0.910, 0.867, 0.816); // #E8DDD0
     pal[7] = vec3(0.957, 0.922, 0.886); // #F4EBE2
     vec3 body_color = pal[clamp(int(floor(body_hash * 8.0)), 0, 7)];
-    fragColor.rgb = body_color;
+    fragColor.rgb = body_color * v_directional;
     fragColor.a = v_color.a;
 
     // --- Procedural windows on side faces ---

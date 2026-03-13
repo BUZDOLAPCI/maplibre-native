@@ -20,6 +20,7 @@ flat out highp float v_ed_flat;
 flat out highp float v_face_width;
 flat out mediump vec3 v_wall_normal;
 flat out highp float v_body_hash;
+out float v_directional;
 
 layout (std140) uniform FillExtrusionDrawableUBO {
     highp mat4 u_matrix;
@@ -145,6 +146,9 @@ highp vec4 color = u_color;
             (u_vertical_gradient * clamp((t + base) * pow(height / 150.0, 0.5), mix(0.7, 0.98, 1.0 - u_lightintensity), 1.0)));
     }
 
+    // Pass directional factor to fragment shader for procedural body color lighting
+    v_directional = directional;
+
     // Assign final color based on surface + ambient light color, diffuse light directional, and light color
     v_color.r += clamp(color.r * directional * u_lightcolor.r, mix(0.0, 0.3, 1.0 - u_lightcolor.r), 1.0);
     v_color.g += clamp(color.g * directional * u_lightcolor.g, mix(0.0, 0.3, 1.0 - u_lightcolor.g), 1.0);
@@ -160,6 +164,7 @@ flat in highp float v_ed_flat;
 flat in highp float v_face_width;
 flat in mediump vec3 v_wall_normal;
 flat in highp float v_body_hash;
+in float v_directional;
 
 layout (std140) uniform FillExtrusionPropsUBO {
     highp vec4 u_color;
@@ -195,7 +200,7 @@ void main() {
     pal[6] = vec3(0.910, 0.867, 0.816); // #E8DDD0
     pal[7] = vec3(0.957, 0.922, 0.886); // #F4EBE2
     vec3 body_color = pal[clamp(int(floor(body_hash * 8.0)), 0, 7)];
-    fragColor.rgb = body_color;
+    fragColor.rgb = body_color * v_directional;
     fragColor.a = v_color.a;
 
     // --- Procedural windows on side faces ---

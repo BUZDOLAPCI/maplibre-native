@@ -10,6 +10,7 @@ flat out highp float v_ed_flat;
 flat out highp float v_face_width;
 flat out mediump vec3 v_wall_normal;
 flat out highp float v_body_hash;
+out float v_directional;
 
 layout (std140) uniform FillExtrusionDrawableUBO {
     highp mat4 u_matrix;
@@ -116,6 +117,9 @@ void main() {
             (1.0 - u_vertical_gradient) +
             (u_vertical_gradient * clamp((t + base) * pow(height / 150.0, 0.5), mix(0.7, 0.98, 1.0 - u_lightintensity), 1.0)));
     }
+
+    // Pass directional factor to fragment shader for procedural body color lighting
+    v_directional = directional;
 
     // Assign final color based on surface + ambient light color, diffuse light directional, and light color
     v_color.r += clamp(color.r * directional * u_lightcolor.r, mix(0.0, 0.3, 1.0 - u_lightcolor.r), 1.0);
