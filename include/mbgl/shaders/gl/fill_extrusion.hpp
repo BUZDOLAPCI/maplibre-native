@@ -130,7 +130,12 @@ highp vec4 color = u_color;
         v_face_width = 0.0;
         v_wall_normal = vec3(0.0);
         v_body_hash = 0.0;
-        v_directional = 0.0;
+        // Encode whether this side face is on the outer shadow perimeter
+        // (wall normal faces in shadow cast direction) for per-face edge fade.
+        // >0 = outer perimeter (smooth), <0 = overlaps roof shadow (keep sharp).
+        v_directional = (normal.y != 0.0)
+            ? dot(vec2(normal.x, normal.y), light_dir)
+            : 0.0;
         v_color = vec4(0.0);
         return;
     }
@@ -222,11 +227,14 @@ void main() {
     // --- Shadow pass early return ---
     if (v_shadow_opacity > 0.001) {
         float alpha = v_shadow_opacity;
-        // Soft-fade side-face shadow edges so the shadow silhouette
-        // is feathered rather than pixel-sharp.
-        if (v_is_side > 0.5) {
-            alpha *= smoothstep(0.0, 0.08, v_wall_uv.y);   // base (near building)
-            alpha *= smoothstep(1.0, 0.92, v_wall_uv.y);   // outer tip
+        // Soft-fade the outer tip of side-face shadows (away from the
+        // building) so the shadow silhouette is feathered.  The base
+        // edge (under the building) stays sharp — it meets the roof.
+        // v_directional > 0 identifies outer-perimeter side faces (wall
+        // normal aligns with shadow cast direction); inner faces that
+        // overlap the roof shadow are left at full alpha.
+        if (v_is_side > 0.5 && v_directional > 0.0) {
+            alpha *= smoothstep(1.0, 0.85, v_wall_uv.y);
         }
         fragColor = vec4(0.0, 0.0, 0.0, alpha);
         return;
