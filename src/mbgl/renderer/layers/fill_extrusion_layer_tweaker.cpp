@@ -15,6 +15,7 @@
 #include <mbgl/style/layers/fill_extrusion_layer_properties.hpp>
 
 #include <cmath>
+#include <string>
 
 #if MLN_RENDER_BACKEND_METAL
 #include <mbgl/shaders/mtl/fill_extrusion.hpp>
@@ -125,6 +126,27 @@ void FillExtrusionLayerTweaker::execute(LayerGroupBase& layerGroup, const PaintP
             binders->setPatternParameters(patternPosA, patternPosB, crossfade);
         }
 
+        const bool isShadow = drawable.getName().find("shadow") != std::string::npos;
+
+        float metersToTile = 0.0f;
+        float shadowOpacity = 0.0f;
+        if (isShadow) {
+            constexpr double earthCircumference = 2.0 * M_PI * 6371008.8;
+            constexpr double extent = 8192.0;
+            constexpr float shadowBaseOpacity = 0.15f;
+            constexpr float shadowZoomFadeStart = 14.5f;
+            constexpr float shadowZoomFadeEnd = 13.5f;
+
+            const double numTilesD = std::pow(2.0, static_cast<double>(tileID.canonical.z));
+            const double tileY = static_cast<double>(tileID.canonical.y);
+            const double latRad = std::atan(std::sinh(M_PI * (1.0 - 2.0 * (tileY + 0.5) / numTilesD)));
+            const double tileWidthMeters = earthCircumference * std::cos(latRad) / numTilesD;
+            metersToTile = static_cast<float>(extent / tileWidthMeters);
+
+            const float shadowFade = std::clamp((zoom - shadowZoomFadeEnd) / (shadowZoomFadeStart - shadowZoomFadeEnd), 0.0f, 1.0f);
+            shadowOpacity = shadowBaseOpacity * shadowFade;
+        }
+
 #if MLN_UBO_CONSOLIDATION
         drawableUBOVector[i] = {
 #else
@@ -143,8 +165,8 @@ void FillExtrusionLayerTweaker::execute(LayerGroupBase& layerGroup, const PaintP
             .pattern_to_t = std::get<0>(binders->get<FillExtrusionPattern>()->interpolationFactor(zoom)),
             .centroid_scale = static_cast<float>(1.0 / zoomFactor),
             .tile_id = {{static_cast<float>(tileID.canonical.x / zoomFactor), static_cast<float>(tileID.canonical.y / zoomFactor)}},
-            .pad1 = 0,
-            .pad2 = 0
+            .is_shadow = shadowOpacity,
+            .meters_to_tile = metersToTile
         };
 
 #if MLN_UBO_CONSOLIDATION

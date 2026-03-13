@@ -21,6 +21,7 @@ flat out highp float v_face_width;
 flat out mediump vec3 v_wall_normal;
 flat out highp float v_body_hash;
 out float v_directional;
+flat out float v_shadow_opacity;
 
 layout (std140) uniform FillExtrusionDrawableUBO {
     highp mat4 u_matrix;
@@ -36,8 +37,8 @@ layout (std140) uniform FillExtrusionDrawableUBO {
     highp float u_pattern_to_t;
     highp float u_centroid_scale;
     highp vec2 u_tile_id;
-    lowp float drawable_pad1;
-    lowp float drawable_pad2;
+    highp float u_is_shadow;
+    highp float u_meters_to_tile;
 };
 
 layout (std140) uniform FillExtrusionTilePropsUBO {
@@ -102,6 +103,38 @@ highp vec4 color = u_color;
     float t = mod(normal.x, 2.0);
     float elevation = t > 0.0 ? height : base;
 
+    // --- Shadow pass: project geometry onto ground plane ---
+    v_shadow_opacity = u_is_shadow;
+    if (u_is_shadow > 0.001) {
+        vec2 light_xy = u_lightpos.xy;
+        float light_xy_len = length(light_xy);
+        float light_z = max(u_lightpos.z, 0.05);
+        vec2 light_dir = light_xy_len > 0.0 ? -light_xy / light_xy_len : vec2(0.0, 0.0);
+        float shadow_angle_factor = clamp(light_xy_len / light_z, 0.0, 6.0);
+
+        float shadow_height_m = max(height - base, 0.0);
+        float shadow_len_m = shadow_height_m * shadow_angle_factor;
+        vec2 shadow_offset_tile = light_dir * shadow_len_m * u_meters_to_tile;
+
+        float shadow_mix = t > 0.0 ? 1.0 : 0.0;
+        vec2 shadow_xy = a_pos + shadow_offset_tile * shadow_mix;
+
+        gl_Position = u_matrix * vec4(shadow_xy, 0.0, 1.0);
+
+        // Set varyings needed by fragment shader
+        v_is_side = (normal.y != 0.0) ? 1.0 : 0.0;
+        v_height_m = shadow_height_m;
+        float height_range_s = max(height - base, 0.001);
+        v_wall_uv = vec2(edgedistance, (elevation - base) / height_range_s);
+        v_ed_flat = 0.0;
+        v_face_width = 0.0;
+        v_wall_normal = vec3(0.0);
+        v_body_hash = 0.0;
+        v_directional = 0.0;
+        v_color = vec4(0.0);
+        return;
+    }
+
     gl_Position = u_matrix * vec4(a_pos, elevation, 1);
 
     // --- Procedural window data ---
@@ -165,6 +198,7 @@ flat in highp float v_face_width;
 flat in mediump vec3 v_wall_normal;
 flat in highp float v_body_hash;
 in float v_directional;
+flat in float v_shadow_opacity;
 
 layout (std140) uniform FillExtrusionPropsUBO {
     highp vec4 u_color;
@@ -185,6 +219,16 @@ layout (std140) uniform FillExtrusionPropsUBO {
 };
 
 void main() {
+    // --- Shadow pass early return ---
+    if (v_shadow_opacity > 0.001) {
+        float alpha = v_shadow_opacity;
+        if (v_is_side > 0.5) {
+            alpha *= smoothstep(1.0, 0.6, v_wall_uv.y);
+        }
+        fragColor = vec4(0.0, 0.0, 0.0, alpha);
+        return;
+    }
+
     fragColor = v_color;
 
     // --- Per-building body color variation (computed in vertex shader from centroid+height) ---

@@ -7,6 +7,7 @@ flat in highp float v_face_width;
 flat in mediump vec3 v_wall_normal;
 flat in highp float v_body_hash;
 in float v_directional;
+flat in float v_shadow_opacity;
 
 layout (std140) uniform FillExtrusionPropsUBO {
     highp vec4 u_color;
@@ -27,6 +28,16 @@ layout (std140) uniform FillExtrusionPropsUBO {
 };
 
 void main() {
+    // --- Shadow pass early return ---
+    if (v_shadow_opacity > 0.001) {
+        float alpha = v_shadow_opacity;
+        if (v_is_side > 0.5) {
+            alpha *= smoothstep(1.0, 0.6, v_wall_uv.y);
+        }
+        fragColor = vec4(0.0, 0.0, 0.0, alpha);
+        return;
+    }
+
     fragColor = v_color;
 
     // --- Per-building body color variation (computed in vertex shader from centroid+height) ---

@@ -154,6 +154,7 @@ void RenderFillExtrusionLayer::update(gfx::ShaderRegistry& shaders,
 
     std::unique_ptr<gfx::DrawableBuilder> depthBuilder;
     std::unique_ptr<gfx::DrawableBuilder> colorBuilder;
+    std::unique_ptr<gfx::DrawableBuilder> shadowBuilder;
 
     const auto& shaderGroup = hasPattern ? fillExtrusionPatternGroup : fillExtrusionGroup;
     if (!shaderGroup) {
@@ -189,6 +190,9 @@ void RenderFillExtrusionLayer::update(gfx::ShaderRegistry& shaders,
         }
         if (colorBuilder) {
             colorBuilder->clearTweakers();
+        }
+        if (shadowBuilder) {
+            shadowBuilder->clearTweakers();
         }
 
         const auto vertexCount = bucket.vertices.elements();
@@ -228,6 +232,20 @@ void RenderFillExtrusionLayer::update(gfx::ShaderRegistry& shaders,
         // The pattern path always uses two passes.
         const auto doDepthPass = (!opaque || hasPattern);
 
+        if (!shadowBuilder) {
+            if (auto builder = context.createDrawableBuilder(layerPrefix + "shadow")) {
+                builder->setShader(shader);
+                builder->setIs3D(true);
+                builder->setEnableColor(true);
+                builder->setColorMode(gfx::ColorMode::alphaBlended());
+                builder->setRenderPass(drawPass);
+                builder->setCullFaceMode(gfx::CullFaceMode::disabled());
+                builder->setDepthType(gfx::DepthMaskType::ReadOnly);
+                builder->setDrawPriority(0);  // draws first (before depth and color)
+                shadowBuilder = std::move(builder);
+            }
+        }
+
         if (doDepthPass && !depthBuilder) {
             if (auto builder = context.createDrawableBuilder(layerPrefix + "depth")) {
                 builder->setShader(shader);
@@ -235,7 +253,7 @@ void RenderFillExtrusionLayer::update(gfx::ShaderRegistry& shaders,
                 builder->setEnableColor(false);
                 builder->setRenderPass(drawPass);
                 builder->setCullFaceMode(gfx::CullFaceMode::backCCW());
-                builder->setDrawPriority(0);
+                builder->setDrawPriority(1);
                 if (tweaker) {
                     builder->addTweaker(tweaker);
                 }
@@ -250,7 +268,7 @@ void RenderFillExtrusionLayer::update(gfx::ShaderRegistry& shaders,
                 builder->setColorMode(gfx::ColorMode::alphaBlended());
                 builder->setRenderPass(drawPass);
                 builder->setCullFaceMode(gfx::CullFaceMode::backCCW());
-                builder->setDrawPriority(1);
+                builder->setDrawPriority(2);
                 if (tweaker) {
                     builder->addTweaker(tweaker);
                 }
@@ -306,6 +324,10 @@ void RenderFillExtrusionLayer::update(gfx::ShaderRegistry& shaders,
                                    gfx::AttributeDataType::Short2);
         }
 
+        // Shadow builder shares the same vertex data
+        shadowBuilder->setRawVertices({}, vertexCount, gfx::AttributeDataType::Short2);
+        shadowBuilder->setVertexAttributes(vertexAttrs);
+
         if (doDepthPass) {
             depthBuilder->setRawVertices({}, vertexCount, gfx::AttributeDataType::Short2);
             depthBuilder->setVertexAttributes(vertexAttrs);
@@ -338,6 +360,7 @@ void RenderFillExtrusionLayer::update(gfx::ShaderRegistry& shaders,
             }
         };
 
+        finish(*shadowBuilder);
         if (doDepthPass) {
             finish(*depthBuilder);
         }
