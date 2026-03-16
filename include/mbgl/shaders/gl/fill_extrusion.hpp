@@ -109,7 +109,8 @@ highp vec4 color = u_color;
         vec2 light_xy = u_lightpos.xy;
         float light_xy_len = length(light_xy);
         float light_z = max(u_lightpos.z, 0.05);
-        vec2 light_dir = light_xy_len > 0.0 ? -light_xy / light_xy_len : vec2(0.0, 0.0);
+        // Match the web fork's ground-plane cast direction.
+        vec2 light_dir = light_xy_len > 0.0 ? light_xy / light_xy_len : vec2(0.0, 0.0);
         float shadow_angle_factor = clamp(light_xy_len / light_z, 0.0, 6.0);
 
         float shadow_height_m = max(height - base, 0.0);
@@ -226,17 +227,7 @@ layout (std140) uniform FillExtrusionPropsUBO {
 void main() {
     // --- Shadow pass early return ---
     if (v_shadow_opacity > 0.001) {
-        float alpha = v_shadow_opacity;
-        // Soft-fade the outer tip of side-face shadows (away from the
-        // building) so the shadow silhouette is feathered.  The base
-        // edge (under the building) stays sharp — it meets the roof.
-        // v_directional > 0 identifies outer-perimeter side faces (wall
-        // normal aligns with shadow cast direction); inner faces that
-        // overlap the roof shadow are left at full alpha.
-        if (v_is_side > 0.5 && v_directional > 0.0) {
-            alpha *= smoothstep(1.0, 0.85, v_wall_uv.y);
-        }
-        fragColor = vec4(0.0, 0.0, 0.0, alpha);
+        fragColor = vec4(0.0, 0.0, 0.0, v_shadow_opacity);
         return;
     }
 

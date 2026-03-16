@@ -81,7 +81,8 @@ void main() {
         vec2 light_xy = u_lightpos.xy;
         float light_xy_len = length(light_xy);
         float light_z = max(u_lightpos.z, 0.05);
-        vec2 light_dir = light_xy_len > 0.0 ? -light_xy / light_xy_len : vec2(0.0, 0.0);
+        // Match the web fork's ground-plane cast direction.
+        vec2 light_dir = light_xy_len > 0.0 ? light_xy / light_xy_len : vec2(0.0, 0.0);
         float shadow_angle_factor = clamp(light_xy_len / light_z, 0.0, 6.0);
 
         float shadow_height_m = max(height - base, 0.0);
