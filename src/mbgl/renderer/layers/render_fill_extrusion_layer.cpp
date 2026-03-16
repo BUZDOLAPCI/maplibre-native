@@ -240,6 +240,12 @@ void RenderFillExtrusionLayer::update(gfx::ShaderRegistry& shaders,
                 builder->setColorMode(gfx::ColorMode::alphaBlended());
                 builder->setRenderPass(drawPass);
                 builder->setCullFaceMode(gfx::CullFaceMode::disabled());
+                // Shadow geometry reuses buffered vector-tile features, so it
+                // must honor the per-tile stencil mask like the regular fill
+                // passes. Otherwise duplicate buffered geometry from adjacent
+                // tiles can spill across tile bounds and alpha-blend into the
+                // blocky gray artifacts seen on the ground.
+                builder->setEnableStencil(true);
                 builder->setDepthType(gfx::DepthMaskType::ReadOnly);
                 builder->setDrawPriority(0);  // draws first (before depth and color)
                 shadowBuilder = std::move(builder);
