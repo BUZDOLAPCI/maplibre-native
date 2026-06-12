@@ -101,7 +101,7 @@ void main() {
         // smaller fwidth() values at the same zoom level.
         float detail = 1.0 - smoothstep(0.13, 0.27, fwidth(raw_u));
         float floor_detail = 1.0 - smoothstep(0.13, 0.27, fw_v);
-        win_mask *= min(detail, floor_detail);
+        win_mask *= max(detail, floor_detail);
 
         // Top-of-building parapet — same thickness as inter-floor slab
         float slab_uv = (1.0 - band_t + band_b) / num_floors;
